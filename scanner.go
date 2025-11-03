@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Scanner struct {
 	lox    *Lox
@@ -113,6 +116,8 @@ func (s *Scanner) scanToken() {
 	default:
 		if isDigit(c) {
 			s.parseNumber()
+		} else if isAlpha(c) {
+			s.parseIdent()
 		} else {
 			s.lox.reportError(s.line, "Unexpected character.")
 		}
@@ -148,7 +153,28 @@ func (s *Scanner) parseString() {
 }
 
 func (s *Scanner) parseNumber() {
-	fmt.Println("TODO: scanner/Scanner.parseNumber")
+	for isDigit(s.peek()) {
+		s.advance()
+	}
+
+	if s.peek() == '.' && isDigit(s.peekNext()) {
+		for isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+
+	lexeme := s.source[s.start:s.current]
+	number, _ := strconv.ParseFloat(lexeme, 64)
+	s.addTokenWithLiteral(NUMBER, number)
+}
+
+func (s *Scanner) parseIdent() {
+	for isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+
+	ident = s.source[s.start:s.current]
+	keyword = keywords.get(ident)
 }
 
 func (s *Scanner) advance() byte {
@@ -175,10 +201,25 @@ func (s *Scanner) peek() byte {
 	return s.source[s.current]
 }
 
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return 0
+	}
+	return s.source[s.current+1]
+}
+
 func (s *Scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
 
 func isDigit(c byte) bool {
 	return c >= '0' && c <= '9'
+}
+
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+}
+
+func isAlphaNumeric(c byte) bool {
+	return isAlpha(c) || isDigit(c)
 }
