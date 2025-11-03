@@ -8,7 +8,6 @@ import (
 func main() {
 	args := os.Args[1:]
 
-	fmt.Println("Test")
 	lox := NewLox()
 
 	switch len(args) {

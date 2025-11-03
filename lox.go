@@ -38,15 +38,19 @@ func (l *Lox) runFile(path string) (err error) {
 
 	l.run(string(source))
 
+	if l.hadError {
+		os.Exit(65)
+	}
+
 	return nil
 }
 
 func (l *Lox) run(source string) {
-	scanner := NewScanner()
+	scanner := NewScanner(l)
 	tokens := scanner.scanTokens(source)
 
 	for _, token := range tokens {
-		fmt.Printf("%s\n", token.toString())
+		fmt.Printf("%s\n", token.String())
 	}
 }
 
@@ -54,6 +58,7 @@ func (l *Lox) reportError(line int, message string) {
 	l.report(line, "", message)
 }
 
-func (l *Lox) report() {
-
+func (l *Lox) report(line int, where string, message string) {
+	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
+	l.hadError = true
 }
