@@ -119,7 +119,7 @@ func (s *Scanner) scanToken() {
 		} else if isAlpha(c) {
 			s.parseIdent()
 		} else {
-			s.lox.reportError(s.line, "Unexpected character.")
+			s.lox.report(s.line, "", fmt.Errorf("Unexpected character."))
 		}
 	}
 }
@@ -142,7 +142,7 @@ func (s *Scanner) parseString() {
 	}
 
 	if s.isAtEnd() {
-		s.lox.reportError(s.line, "Unterminated string.")
+		s.lox.report(s.line, "", fmt.Errorf("Unterminated string."))
 		return
 	}
 
@@ -158,6 +158,7 @@ func (s *Scanner) parseNumber() {
 	}
 
 	if s.peek() == '.' && isDigit(s.peekNext()) {
+		s.advance()
 		for isDigit(s.peek()) {
 			s.advance()
 		}
@@ -173,8 +174,13 @@ func (s *Scanner) parseIdent() {
 		s.advance()
 	}
 
-	ident = s.source[s.start:s.current]
-	keyword = keywords.get(ident)
+	ident := s.source[s.start:s.current]
+	keyword, ok := keywords[ident]
+	if ok {
+		s.addTokenWithLiteral(IDENTIFIER, ident)
+	} else {
+		s.addToken(keyword)
+	}
 }
 
 func (s *Scanner) advance() byte {

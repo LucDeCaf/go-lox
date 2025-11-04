@@ -46,19 +46,28 @@ func (l *Lox) runFile(path string) (err error) {
 }
 
 func (l *Lox) run(source string) {
+	// Errors are already being reported, but they should probably be handled here
 	scanner := NewScanner(l)
 	tokens := scanner.scanTokens(source)
+	parser := NewParser(l)
+	ast := parser.Parse(tokens)
 
-	for _, token := range tokens {
-		fmt.Printf("%s\n", token.String())
+	if l.hadError || ast == nil {
+		return
+	}
+
+	printAst(ast)
+}
+
+func (l *Lox) reportError(token Token, err error) {
+	if token.tokenType == EOF {
+		l.report(token.line, " at end", err)
+	} else {
+		l.report(token.line, " at '"+token.lexeme+"'", err)
 	}
 }
 
-func (l *Lox) reportError(line int, message string) {
-	l.report(line, "", message)
-}
-
-func (l *Lox) report(line int, where string, message string) {
-	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
+func (l *Lox) report(line int, where string, err error) {
+	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, err.Error())
 	l.hadError = true
 }
