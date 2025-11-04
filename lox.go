@@ -7,12 +7,14 @@ import (
 )
 
 type Lox struct {
-	hadError bool
+	interpreter *Interpreter
+	hadError    bool
 }
 
 func NewLox() Lox {
 	return Lox{
-		hadError: false,
+		interpreter: NewInterpreter(),
+		hadError:    false,
 	}
 }
 
@@ -45,6 +47,7 @@ func (l *Lox) runFile(path string) (err error) {
 	return nil
 }
 
+// TODO report errors here via struct that implements ErrorReporter
 func (l *Lox) run(source string) {
 	// Errors are already being reported, but they should probably be handled here
 	scanner := NewScanner(l)
@@ -56,10 +59,15 @@ func (l *Lox) run(source string) {
 		return
 	}
 
-	astPrinter := &AstPrinter{}
-	fmt.Println(astPrinter.Print(ast))
+	// Reuse same interpreter in every call
+	v := l.interpreter.Interpret(ast)
+	if v == nil {
+		fmt.Println("WARNING: An error likely occured")
+	}
+	fmt.Printf("%v\n", v)
 }
 
+// TODO replace with actual error reporting
 func (l *Lox) reportError(token Token, err error) {
 	if token.tokenType == EOF {
 		l.report(token.line, " at end", err)

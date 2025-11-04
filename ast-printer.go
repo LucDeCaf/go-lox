@@ -4,9 +4,7 @@ import (
 	"fmt"
 )
 
-type AstPrinter struct {
-	astString string
-}
+type AstPrinter struct{}
 
 func (a *AstPrinter) Print(e Expr) string {
 	switch v := e.Accept(a).(type) {
