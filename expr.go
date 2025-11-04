@@ -1,10 +1,14 @@
 package main
 
-import "fmt"
-
 type Expr interface {
-	Eval() Expr
-	String() string
+	Accept(ExprVisitor) any
+}
+
+type ExprVisitor interface {
+	VisitBinary(*Binary) any
+	VisitLiteral(*Literal) any
+	VisitGrouping(*Grouping) any
+	VisitUnary(*Unary) any
 }
 
 type Literal struct {
@@ -25,52 +29,18 @@ type Unary struct {
 	operator Token
 }
 
-func (b Binary) Eval() Expr {
-	// TODO
-	return b
+func (expr *Literal) Accept(v ExprVisitor) any {
+	return v.VisitLiteral(expr)
 }
 
-func (g Grouping) Eval() Expr {
-	// TODO
-	return g
+func (expr *Binary) Accept(v ExprVisitor) any {
+	return v.VisitBinary(expr)
 }
 
-func (u Unary) Eval() Expr {
-	// TODO
-	return u
+func (expr *Grouping) Accept(v ExprVisitor) any {
+	return v.VisitGrouping(expr)
 }
 
-func (l Literal) Eval() Expr {
-	return l
-}
-
-func (b Binary) String() string {
-	return fmt.Sprintf("(%s %s %s)", b.left.String(), b.right.String(), b.operator.lexeme)
-}
-
-func (g Grouping) String() string {
-	return fmt.Sprintf("(group %s)", g.expression.String())
-}
-
-func (u Unary) String() string {
-	return fmt.Sprintf("(%s %s)", u.right.String(), u.operator.lexeme)
-}
-
-func (l Literal) String() string {
-	switch v := l.value.(type) {
-	case float64:
-		return fmt.Sprintf("%v", v)
-	case string:
-		return "'" + v + "'"
-	case bool:
-		if v {
-			return "<true>"
-		} else {
-			return "<false>"
-		}
-	case nil:
-		return "<nil>"
-	default:
-		return "<invalid>"
-	}
+func (expr *Unary) Accept(v ExprVisitor) any {
+	return v.VisitUnary(expr)
 }

@@ -63,7 +63,7 @@ func (p *Parser) equality() (Expr, error) {
 			return nil, err
 		}
 
-		expr = Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -86,7 +86,7 @@ func (p *Parser) comparison() (Expr, error) {
 			return nil, err
 		}
 
-		expr = Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -109,7 +109,7 @@ func (p *Parser) term() (Expr, error) {
 			return nil, err
 		}
 
-		expr = Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -132,7 +132,7 @@ func (p *Parser) factor() (Expr, error) {
 			return nil, err
 		}
 
-		expr = Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -150,7 +150,7 @@ func (p *Parser) unary() (Expr, error) {
 			return nil, err
 		}
 
-		return Unary{
+		return &Unary{
 			operator: *operator,
 			right:    right,
 		}, nil
@@ -161,18 +161,18 @@ func (p *Parser) unary() (Expr, error) {
 
 func (p *Parser) primary() (Expr, error) {
 	if p.match(TRUE) {
-		return Literal{value: true}, nil
+		return &Literal{value: true}, nil
 	}
 	if p.match(FALSE) {
-		return Literal{value: false}, nil
+		return &Literal{value: false}, nil
 	}
 	if p.match(NIL) {
-		return Literal{value: nil}, nil
+		return &Literal{value: nil}, nil
 	}
 
 	if p.match(NUMBER, STRING) {
 		value := p.previous().literal
-		return Literal{value}, nil
+		return &Literal{value}, nil
 	}
 
 	if p.match(LEFT_PAREN) {
@@ -186,7 +186,7 @@ func (p *Parser) primary() (Expr, error) {
 			return nil, err
 		}
 
-		return Grouping{expression: expr}, nil
+		return &Grouping{expression: expr}, nil
 	}
 
 	return nil, &ParseError{token: *p.peek(), message: "Invalid token in expr"}

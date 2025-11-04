@@ -56,7 +56,8 @@ func (l *Lox) run(source string) {
 		return
 	}
 
-	printAst(ast)
+	astPrinter := &AstPrinter{}
+	fmt.Println(astPrinter.Print(ast))
 }
 
 func (l *Lox) reportError(token Token, err error) {
