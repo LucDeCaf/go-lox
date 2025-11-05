@@ -6,28 +6,38 @@ import (
 )
 
 type Scanner struct {
-	lox    *Lox
 	source string
 	tokens []Token
+	errors []error
 
 	start   int
 	current int
 	line    int
 }
 
-func NewScanner(lox *Lox) Scanner {
+type ScanError struct {
+	line    int
+	message string
+}
+
+func (e *ScanError) Error() string {
+	return fmt.Sprintf("[line %d] Error: %s", e.line, e.message)
+}
+
+func NewScanner() Scanner {
 	return Scanner{
-		lox:     lox,
 		source:  "",
 		tokens:  []Token{},
+		errors:  []error{},
 		start:   0,
 		current: 0,
 		line:    1,
 	}
 }
 
-func (s *Scanner) scanTokens(source string) []Token {
+func (s *Scanner) scanTokens(source string) ([]Token, bool) {
 	s.source = source
+	s.errors = []error{}
 
 	for !s.isAtEnd() {
 		s.start = s.current
@@ -41,7 +51,7 @@ func (s *Scanner) scanTokens(source string) []Token {
 		s.line,
 	))
 
-	return s.tokens
+	return s.tokens, len(s.errors) == 0
 }
 
 func (s *Scanner) scanToken() {
@@ -119,7 +129,7 @@ func (s *Scanner) scanToken() {
 		} else if isAlpha(c) {
 			s.parseIdent()
 		} else {
-			s.lox.report(s.line, "", fmt.Errorf("Unexpected character."))
+			s.addError("Unexpected character.")
 		}
 	}
 }
@@ -133,6 +143,13 @@ func (s *Scanner) addTokenWithLiteral(tokenType TokenType, literal any) {
 	s.tokens = append(s.tokens, NewToken(tokenType, lexeme, literal, s.line))
 }
 
+func (s *Scanner) addError(message string) {
+	s.errors = append(s.errors, &ScanError{
+		line:    s.line,
+		message: message,
+	})
+}
+
 func (s *Scanner) parseString() {
 	for s.peek() != '"' && !s.isAtEnd() {
 		if s.peek() == '\n' {
@@ -142,7 +159,7 @@ func (s *Scanner) parseString() {
 	}
 
 	if s.isAtEnd() {
-		s.lox.report(s.line, "", fmt.Errorf("Unterminated string."))
+		s.addError("Unterminated string.")
 		return
 	}
 

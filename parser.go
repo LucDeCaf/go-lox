@@ -1,13 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 )
 
 type Parser struct {
-	lox     *Lox
 	tokens  []Token
+	errors  []error
 	current int
 }
 
@@ -20,30 +19,26 @@ func (e *ParseError) Error() string {
 	return fmt.Sprintf("ParseError <%s>: %s", e.token.String(), e.message)
 }
 
-func NewParser(lox *Lox) Parser {
+func NewParser() Parser {
 	return Parser{
-		lox:     lox,
 		current: 0,
 	}
 }
 
-func (p *Parser) Parse(tokens []Token) Expr {
+func (p *Parser) parse(tokens []Token) (Expr, bool) {
 	p.tokens = tokens
+	p.errors = []error{}
 
 	expr, err := p.expression()
 	if err != nil {
-		var parseError *ParseError
-		if errors.As(err, &parseError) {
-			p.lox.reportError(parseError.token, parseError)
-			return nil
-		}
-
-		// Other errors - not currently possible but you never know
-		p.lox.report(0, " at unknown location", err)
-		return nil
+		p.errors = append(p.errors, err)
 	}
 
-	return expr
+	if len(p.errors) > 0 {
+		return nil, false
+	}
+
+	return expr, true
 }
 
 func (p *Parser) expression() (Expr, error) {
@@ -223,6 +218,10 @@ func (p *Parser) synchronize() {
 	}
 }
 
+func (p *Parser) addError(err *ParseError) {
+	return
+}
+
 func (p *Parser) advance() *Token {
 	if !p.isAtEnd() {
 		p.current++
@@ -261,7 +260,6 @@ func (p *Parser) consume(tokenType TokenType, errorMessage string) (*Token, erro
 	}
 
 	err := &ParseError{token: *p.peek(), message: errorMessage}
-	p.lox.reportError(err.token, err)
 	return nil, err
 }
 

@@ -8,13 +8,14 @@ import (
 
 type Lox struct {
 	interpreter *Interpreter
+	reporters   []ErrorReporter[error]
 	hadError    bool
 }
 
 func NewLox() Lox {
 	return Lox{
 		interpreter: NewInterpreter(),
-		hadError:    false,
+		reporters:   []ErrorReporter[error]{},
 	}
 }
 
@@ -47,19 +48,27 @@ func (l *Lox) runFile(path string) (err error) {
 	return nil
 }
 
-// TODO report errors here via struct that implements ErrorReporter
 func (l *Lox) run(source string) {
-	// Errors are already being reported, but they should probably be handled here
-	scanner := NewScanner(l)
-	tokens := scanner.scanTokens(source)
-	parser := NewParser(l)
-	ast := parser.Parse(tokens)
+	scanner := NewScanner()
+	tokens, scanOk := scanner.scanTokens(source)
+	for _, err := range scanner.errors {
+		for _, r := range l.reporters {
+			r.ReportError(err)
+		}
+	}
 
-	if l.hadError || ast == nil {
+	parser := NewParser()
+	ast, parseOk := parser.parse(tokens)
+	for _, err := range parser.errors {
+		for _, r := range l.reporters {
+			r.ReportError(err)
+		}
+	}
+
+	if !scanOk || !parseOk {
 		return
 	}
 
-	// Reuse same interpreter in every call
 	v := l.interpreter.Interpret(ast)
 	if v == nil {
 		fmt.Println("WARNING: An error likely occured")
@@ -67,16 +76,6 @@ func (l *Lox) run(source string) {
 	fmt.Printf("%v\n", v)
 }
 
-// TODO replace with actual error reporting
-func (l *Lox) reportError(token Token, err error) {
-	if token.tokenType == EOF {
-		l.report(token.line, " at end", err)
-	} else {
-		l.report(token.line, " at '"+token.lexeme+"'", err)
-	}
-}
-
-func (l *Lox) report(line int, where string, err error) {
-	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, err.Error())
-	l.hadError = true
+func (l *Lox) registerErrorReporter(r ErrorReporter[error]) {
+	l.reporters = append(l.reporters, r)
 }

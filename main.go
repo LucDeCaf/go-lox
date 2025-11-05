@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/LucDeCaf/go-lox/error_reporters"
 	"os"
 )
 
@@ -9,6 +10,7 @@ func main() {
 	args := os.Args[1:]
 
 	lox := NewLox()
+	lox.registerErrorReporter(error_reporters.NewStdoutReporter())
 
 	switch len(args) {
 	case 0:
