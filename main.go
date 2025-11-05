@@ -14,7 +14,7 @@ func main() {
 	case 0:
 		lox.runPrompt()
 	case 1:
-		lox.runFile(args[1])
+		lox.runFile(args[0])
 	default:
 		fmt.Println("Usage: lox [script]")
 	}
