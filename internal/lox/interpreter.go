@@ -1,20 +1,20 @@
-package main
+package lox
 
-type Interpreter struct{}
+type interpreter struct{}
 
-func NewInterpreter() *Interpreter {
-	return &Interpreter{}
+func newInterpreter() *interpreter {
+	return &interpreter{}
 }
 
-func (i *Interpreter) VisitLiteral(l *Literal) any {
+func (i *interpreter) visitLiteral(l *Literal) any {
 	return l.value
 }
 
-func (i *Interpreter) VisitGrouping(g *Grouping) any {
+func (i *interpreter) visitGrouping(g *Grouping) any {
 	return i.evaluate(g.expression)
 }
 
-func (i *Interpreter) VisitBinary(b *Binary) any {
+func (i *interpreter) visitBinary(b *Binary) any {
 	left := i.evaluate(b.left)
 	right := i.evaluate(b.right)
 
@@ -102,7 +102,7 @@ func (i *Interpreter) VisitBinary(b *Binary) any {
 	return nil
 }
 
-func (i *Interpreter) VisitUnary(u *Unary) any {
+func (i *interpreter) visitUnary(u *Unary) any {
 	right := i.evaluate(u.right)
 
 	switch u.operator.tokenType {
@@ -123,13 +123,13 @@ func (i *Interpreter) VisitUnary(u *Unary) any {
 	return nil
 }
 
-func (i *Interpreter) Interpret(e Expr) any {
+func (i *interpreter) Interpret(e Expr) any {
 	// TODO error handling/reporting
 	return i.evaluate(e)
 }
 
-func (i *Interpreter) evaluate(e Expr) any {
-	return e.Accept(i)
+func (i *interpreter) evaluate(e Expr) any {
+	return e.accept(i)
 }
 
 func isTruthy(obj any) bool {

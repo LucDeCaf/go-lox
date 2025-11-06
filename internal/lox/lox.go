@@ -1,25 +1,27 @@
-package main
+package lox
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/LucDeCaf/go-lox/internal/lox/error_reporters"
 	"os"
 )
 
 type Lox struct {
-	interpreter *Interpreter
-	reporters   []ErrorReporter[error]
+	interpreter *interpreter
+	reporters   []error_reporters.ErrorReporter[error]
 	hadError    bool
 }
 
 func NewLox() Lox {
 	return Lox{
-		interpreter: NewInterpreter(),
-		reporters:   []ErrorReporter[error]{},
+		interpreter: newInterpreter(),
+		reporters:   []error_reporters.ErrorReporter[error]{},
+		hadError:    false,
 	}
 }
 
-func (l *Lox) runPrompt() {
+func (l *Lox) RunPrompt() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -33,7 +35,7 @@ func (l *Lox) runPrompt() {
 	}
 }
 
-func (l *Lox) runFile(path string) (err error) {
+func (l *Lox) RunFile(path string) (err error) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -76,6 +78,6 @@ func (l *Lox) run(source string) {
 	fmt.Printf("%v\n", v)
 }
 
-func (l *Lox) registerErrorReporter(r ErrorReporter[error]) {
+func (l *Lox) RegisterErrorReporter(r error_reporters.ErrorReporter[error]) {
 	l.reporters = append(l.reporters, r)
 }

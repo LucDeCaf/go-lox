@@ -2,21 +2,22 @@ package main
 
 import (
 	"fmt"
-	"github.com/LucDeCaf/go-lox/error_reporters"
+	"github.com/LucDeCaf/go-lox/internal/lox"
+	"github.com/LucDeCaf/go-lox/internal/lox/error_reporters"
 	"os"
 )
 
 func main() {
 	args := os.Args[1:]
 
-	lox := NewLox()
-	lox.registerErrorReporter(error_reporters.NewStdoutReporter())
+	lox := lox.NewLox()
+	lox.RegisterErrorReporter(error_reporters.NewStdoutReporter())
 
 	switch len(args) {
 	case 0:
-		lox.runPrompt()
+		lox.RunPrompt()
 	case 1:
-		lox.runFile(args[0])
+		lox.RunFile(args[0])
 	default:
 		fmt.Println("Usage: lox [script]")
 	}

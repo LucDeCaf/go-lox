@@ -1,4 +1,4 @@
-package main
+package lox
 
 import (
 	"fmt"
@@ -193,7 +193,7 @@ func (s *Scanner) parseIdent() {
 
 	ident := s.source[s.start:s.current]
 	keyword, ok := keywords[ident]
-	if ok {
+	if !ok {
 		s.addTokenWithLiteral(IDENTIFIER, ident)
 	} else {
 		s.addToken(keyword)
