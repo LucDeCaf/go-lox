@@ -1,46 +1,46 @@
 package lox
 
 type Expr interface {
-	accept(exprVisitor) any
+	Accept(ExprVisitor) any
 }
 
-type exprVisitor interface {
-	visitBinary(*Binary) any
-	visitLiteral(*Literal) any
-	visitGrouping(*Grouping) any
-	visitUnary(*Unary) any
+type ExprVisitor interface {
+	VisitBinaryExpr(*BinaryExpr) any
+	VisitLiteralExpr(*LiteralExpr) any
+	VisitGroupingExpr(*GroupingExpr) any
+	VisitUnaryExpr(*UnaryExpr) any
 }
 
-type Literal struct {
+type LiteralExpr struct {
 	value any
 }
 
-type Binary struct {
+type BinaryExpr struct {
 	left, right Expr
 	operator    Token
 }
 
-type Grouping struct {
+type GroupingExpr struct {
 	expression Expr
 }
 
-type Unary struct {
+type UnaryExpr struct {
 	right    Expr
 	operator Token
 }
 
-func (expr *Literal) accept(v exprVisitor) any {
-	return v.visitLiteral(expr)
+func (expr *LiteralExpr) Accept(v ExprVisitor) any {
+	return v.VisitLiteralExpr(expr)
 }
 
-func (expr *Binary) accept(v exprVisitor) any {
-	return v.visitBinary(expr)
+func (expr *BinaryExpr) Accept(v ExprVisitor) any {
+	return v.VisitBinaryExpr(expr)
 }
 
-func (expr *Grouping) accept(v exprVisitor) any {
-	return v.visitGrouping(expr)
+func (expr *GroupingExpr) Accept(v ExprVisitor) any {
+	return v.VisitGroupingExpr(expr)
 }
 
-func (expr *Unary) accept(v exprVisitor) any {
-	return v.visitUnary(expr)
+func (expr *UnaryExpr) Accept(v ExprVisitor) any {
+	return v.VisitUnaryExpr(expr)
 }

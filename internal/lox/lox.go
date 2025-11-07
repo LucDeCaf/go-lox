@@ -8,14 +8,14 @@ import (
 )
 
 type Lox struct {
-	interpreter *interpreter
+	interpreter *Interpreter
 	reporters   []error_reporters.ErrorReporter[error]
 	hadError    bool
 }
 
 func NewLox() Lox {
 	return Lox{
-		interpreter: newInterpreter(),
+		interpreter: NewInterpreter(),
 		reporters:   []error_reporters.ErrorReporter[error]{},
 		hadError:    false,
 	}
@@ -60,7 +60,7 @@ func (l *Lox) run(source string) {
 	}
 
 	parser := NewParser()
-	ast, parseOk := parser.parse(tokens)
+	statements, parseOk := parser.parse(tokens)
 	for _, err := range parser.errors {
 		for _, r := range l.reporters {
 			r.ReportError(err)
@@ -71,11 +71,7 @@ func (l *Lox) run(source string) {
 		return
 	}
 
-	v := l.interpreter.Interpret(ast)
-	if v == nil {
-		fmt.Println("WARNING: An error likely occured")
-	}
-	fmt.Printf("%v\n", v)
+	l.interpreter.Interpret(statements)
 }
 
 func (l *Lox) RegisterErrorReporter(r error_reporters.ErrorReporter[error]) {

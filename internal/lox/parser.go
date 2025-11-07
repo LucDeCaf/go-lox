@@ -25,20 +25,62 @@ func NewParser() Parser {
 	}
 }
 
-func (p *Parser) parse(tokens []Token) (Expr, bool) {
+func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
 	p.tokens = tokens
 	p.errors = []error{}
 
-	expr, err := p.expression()
-	if err != nil {
-		p.errors = append(p.errors, err)
+	statements := []Stmt{}
+
+	for !p.isAtEnd() {
+		stmt, err := p.statement()
+		if err != nil {
+			p.errors = append(p.errors, err)
+		} else {
+			statements = append(statements, stmt)
+		}
 	}
 
 	if len(p.errors) > 0 {
 		return nil, false
 	}
 
-	return expr, true
+	return statements, true
+}
+
+func (p *Parser) statement() (Stmt, error) {
+	if p.match(PRINT) {
+		return p.printStmt()
+	}
+
+	return p.expressionStmt()
+}
+
+func (p *Parser) printStmt() (Stmt, error) {
+	expression, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(SEMICOLON, "Expect ';' after expression.")
+	if err != nil {
+		return nil, err
+	}
+
+	return &PrintStmt{expression}, nil
+}
+
+func (p *Parser) expressionStmt() (Stmt, error) {
+	expression, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(SEMICOLON, "Expect ';'; after expression.")
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExpressionStmt{expression}, nil
 }
 
 func (p *Parser) expression() (Expr, error) {
@@ -58,7 +100,7 @@ func (p *Parser) equality() (Expr, error) {
 			return nil, err
 		}
 
-		expr = &Binary{
+		expr = &BinaryExpr{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -81,7 +123,7 @@ func (p *Parser) comparison() (Expr, error) {
 			return nil, err
 		}
 
-		expr = &Binary{
+		expr = &BinaryExpr{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -104,7 +146,7 @@ func (p *Parser) term() (Expr, error) {
 			return nil, err
 		}
 
-		expr = &Binary{
+		expr = &BinaryExpr{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -127,7 +169,7 @@ func (p *Parser) factor() (Expr, error) {
 			return nil, err
 		}
 
-		expr = &Binary{
+		expr = &BinaryExpr{
 			left:     expr,
 			operator: *operator,
 			right:    right,
@@ -145,7 +187,7 @@ func (p *Parser) unary() (Expr, error) {
 			return nil, err
 		}
 
-		return &Unary{
+		return &UnaryExpr{
 			operator: *operator,
 			right:    right,
 		}, nil
@@ -156,18 +198,18 @@ func (p *Parser) unary() (Expr, error) {
 
 func (p *Parser) primary() (Expr, error) {
 	if p.match(TRUE) {
-		return &Literal{value: true}, nil
+		return &LiteralExpr{value: true}, nil
 	}
 	if p.match(FALSE) {
-		return &Literal{value: false}, nil
+		return &LiteralExpr{value: false}, nil
 	}
 	if p.match(NIL) {
-		return &Literal{value: nil}, nil
+		return &LiteralExpr{value: nil}, nil
 	}
 
 	if p.match(NUMBER, STRING) {
 		value := p.previous().literal
-		return &Literal{value}, nil
+		return &LiteralExpr{value}, nil
 	}
 
 	if p.match(LEFT_PAREN) {
@@ -176,15 +218,15 @@ func (p *Parser) primary() (Expr, error) {
 			return nil, err
 		}
 
-		_, err = p.consume(RIGHT_PAREN, "Expect ')' after expression")
+		_, err = p.consume(RIGHT_PAREN, "Expect ')' after expression.")
 		if err != nil {
 			return nil, err
 		}
 
-		return &Grouping{expression: expr}, nil
+		return &GroupingExpr{expression: expr}, nil
 	}
 
-	return nil, &ParseError{token: *p.peek(), message: "Invalid token in expr"}
+	return nil, &ParseError{token: *p.peek(), message: "Invalid token."}
 }
 
 func (p *Parser) synchronize() {
@@ -216,10 +258,6 @@ func (p *Parser) synchronize() {
 
 		p.advance()
 	}
-}
-
-func (p *Parser) addError(err *ParseError) {
-	return
 }
 
 func (p *Parser) advance() *Token {

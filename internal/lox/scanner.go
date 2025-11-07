@@ -121,7 +121,9 @@ func (s *Scanner) scanToken() {
 		s.line++
 
 	case '"':
-		s.parseString()
+		if err := s.parseString(); err != nil {
+			s.errors = append(s.errors, err)
+		}
 
 	default:
 		if isDigit(c) {
@@ -129,7 +131,10 @@ func (s *Scanner) scanToken() {
 		} else if isAlpha(c) {
 			s.parseIdent()
 		} else {
-			s.addError("Unexpected character.")
+			s.errors = append(s.errors, &ScanError{
+				line:    s.line,
+				message: "Unexpected character.",
+			})
 		}
 	}
 }
@@ -143,14 +148,7 @@ func (s *Scanner) addTokenWithLiteral(tokenType TokenType, literal any) {
 	s.tokens = append(s.tokens, NewToken(tokenType, lexeme, literal, s.line))
 }
 
-func (s *Scanner) addError(message string) {
-	s.errors = append(s.errors, &ScanError{
-		line:    s.line,
-		message: message,
-	})
-}
-
-func (s *Scanner) parseString() {
+func (s *Scanner) parseString() error {
 	for s.peek() != '"' && !s.isAtEnd() {
 		if s.peek() == '\n' {
 			s.line++
@@ -159,14 +157,18 @@ func (s *Scanner) parseString() {
 	}
 
 	if s.isAtEnd() {
-		s.addError("Unterminated string.")
-		return
+		return &ScanError{
+			line:    s.line,
+			message: "Unterminated string.",
+		}
 	}
 
 	s.advance()
 
 	literal := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(STRING, literal)
+
+	return nil
 }
 
 func (s *Scanner) parseNumber() {

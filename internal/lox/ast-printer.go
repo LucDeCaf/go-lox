@@ -7,7 +7,7 @@ import (
 type AstPrinter struct{}
 
 func (a *AstPrinter) Print(e Expr) string {
-	switch v := e.accept(a).(type) {
+	switch v := e.Accept(a).(type) {
 	case string:
 		return v
 	default:
@@ -15,7 +15,7 @@ func (a *AstPrinter) Print(e Expr) string {
 	}
 }
 
-func (a *AstPrinter) visitLiteral(l *Literal) any {
+func (a *AstPrinter) VisitLiteralExpr(l *LiteralExpr) any {
 	switch v := l.value.(type) {
 	case float64:
 		return fmt.Sprintf("%v", v)
@@ -34,14 +34,14 @@ func (a *AstPrinter) visitLiteral(l *Literal) any {
 	}
 }
 
-func (a *AstPrinter) visitBinary(b *Binary) any {
-	return fmt.Sprintf("(%s %s %s)", b.left.accept(a), b.right.accept(a), b.operator.lexeme)
+func (a *AstPrinter) VisitBinaryExpr(b *BinaryExpr) any {
+	return fmt.Sprintf("(%s %s %s)", b.left.Accept(a), b.right.Accept(a), b.operator.lexeme)
 }
 
-func (a *AstPrinter) visitGrouping(g *Grouping) any {
-	return fmt.Sprintf("(group %s)", g.expression.accept(a))
+func (a *AstPrinter) VisitGroupingExpr(g *GroupingExpr) any {
+	return fmt.Sprintf("(group %s)", g.expression.Accept(a))
 }
 
-func (a *AstPrinter) visitUnary(u *Unary) any {
-	return fmt.Sprintf("(%s %s)", u.right.accept(a), u.operator.lexeme)
+func (a *AstPrinter) VisitUnaryExpr(u *UnaryExpr) any {
+	return fmt.Sprintf("(%s %s)", u.right.Accept(a), u.operator.lexeme)
 }

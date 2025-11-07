@@ -1,20 +1,31 @@
 package lox
 
-type interpreter struct{}
+import "fmt"
 
-func newInterpreter() *interpreter {
-	return &interpreter{}
+type Interpreter struct {
+	errors []error
 }
 
-func (i *interpreter) visitLiteral(l *Literal) any {
+type InterpretError struct {
+	stmt    Stmt
+	message string
+}
+
+func NewInterpreter() *Interpreter {
+	return &Interpreter{
+		errors: []error{},
+	}
+}
+
+func (i *Interpreter) VisitLiteralExpr(l *LiteralExpr) any {
 	return l.value
 }
 
-func (i *interpreter) visitGrouping(g *Grouping) any {
+func (i *Interpreter) VisitGroupingExpr(g *GroupingExpr) any {
 	return i.evaluate(g.expression)
 }
 
-func (i *interpreter) visitBinary(b *Binary) any {
+func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 	left := i.evaluate(b.left)
 	right := i.evaluate(b.right)
 
@@ -102,7 +113,7 @@ func (i *interpreter) visitBinary(b *Binary) any {
 	return nil
 }
 
-func (i *interpreter) visitUnary(u *Unary) any {
+func (i *Interpreter) VisitUnaryExpr(u *UnaryExpr) any {
 	right := i.evaluate(u.right)
 
 	switch u.operator.tokenType {
@@ -123,13 +134,33 @@ func (i *interpreter) visitUnary(u *Unary) any {
 	return nil
 }
 
-func (i *interpreter) Interpret(e Expr) any {
-	// TODO error handling/reporting
-	return i.evaluate(e)
+func (i *Interpreter) VisitExpressionStmt(s *ExpressionStmt) {
+	i.evaluate(s.expression)
 }
 
-func (i *interpreter) evaluate(e Expr) any {
-	return e.accept(i)
+func (i *Interpreter) VisitPrintStmt(s *PrintStmt) {
+	expr := i.evaluate(s.expression)
+	fmt.Printf("%v\n", expr)
+}
+
+func (i *Interpreter) Interpret(statements []Stmt) {
+	for _, stmt := range statements {
+		if err := i.execute(stmt); err != nil {
+			i.errors = append(i.errors, err)
+		}
+	}
+}
+
+func (i *Interpreter) execute(s Stmt) error {
+	return s.Accept(i)
+}
+
+func (i *Interpreter) evaluate(e Expr) any {
+	return e.Accept(i)
+}
+
+func (i *Interpreter) addError(err error) {
+	i.errors = append(i.errors, err)
 }
 
 func isTruthy(obj any) bool {
