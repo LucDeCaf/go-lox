@@ -24,8 +24,8 @@ func (e *ScanError) Error() string {
 	return fmt.Sprintf("[line %d] Error: %s", e.line, e.message)
 }
 
-func NewScanner() Scanner {
-	return Scanner{
+func NewScanner() *Scanner {
+	return &Scanner{
 		source:  "",
 		tokens:  []Token{},
 		errors:  []error{},

@@ -5,8 +5,9 @@ type Stmt interface {
 }
 
 type StmtVisitor interface {
-	VisitExpressionStmt(*ExpressionStmt)
-	VisitPrintStmt(*PrintStmt)
+	VisitExpressionStmt(*ExpressionStmt) error
+	VisitPrintStmt(*PrintStmt) error
+	VisitVarStmt(*VarStmt) error
 }
 
 type ExpressionStmt struct {
@@ -17,14 +18,19 @@ type PrintStmt struct {
 	expression Expr
 }
 
-// TODO errors
-func (s *ExpressionStmt) Accept(v StmtVisitor) error {
-	v.VisitExpressionStmt(s)
-	return nil
+type VarStmt struct {
+	name  *Token
+	value Expr
 }
 
-// TODO errors
+func (s *ExpressionStmt) Accept(v StmtVisitor) error {
+	return v.VisitExpressionStmt(s)
+}
+
 func (s *PrintStmt) Accept(v StmtVisitor) error {
-	v.VisitPrintStmt(s)
-	return nil
+	return v.VisitPrintStmt(s)
+}
+
+func (s *VarStmt) Accept(v StmtVisitor) error {
+	return v.VisitVarStmt(s)
 }

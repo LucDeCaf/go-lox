@@ -19,12 +19,13 @@ func (e *ParseError) Error() string {
 	return fmt.Sprintf("ParseError <%s>: %s", e.token.String(), e.message)
 }
 
-func NewParser() Parser {
-	return Parser{
+func NewParser() *Parser {
+	return &Parser{
+		tokens:  []Token{},
+		errors:  []error{},
 		current: 0,
 	}
 }
-
 func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
 	p.tokens = tokens
 	p.errors = []error{}
@@ -32,9 +33,10 @@ func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
 	statements := []Stmt{}
 
 	for !p.isAtEnd() {
-		stmt, err := p.statement()
+		stmt, err := p.declaration()
 		if err != nil {
 			p.errors = append(p.errors, err)
+			p.synchronize()
 		} else {
 			statements = append(statements, stmt)
 		}
@@ -45,6 +47,30 @@ func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
 	}
 
 	return statements, true
+}
+
+func (p *Parser) declaration() (Stmt, error) {
+	if p.match(VAR) {
+		return p.varDeclaration()
+	}
+	return p.statement()
+}
+
+func (p *Parser) varDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect identifier after VAR.")
+	if err != nil {
+		return nil, err
+	}
+
+	var value Expr = nil
+	if p.match(EQUAL) {
+		value, err = p.expression()
+	}
+
+	return &VarStmt{
+		name,
+		value,
+	}, nil
 }
 
 func (p *Parser) statement() (Stmt, error) {
@@ -102,7 +128,7 @@ func (p *Parser) equality() (Expr, error) {
 
 		expr = &BinaryExpr{
 			left:     expr,
-			operator: *operator,
+			operator: operator,
 			right:    right,
 		}
 	}
@@ -125,7 +151,7 @@ func (p *Parser) comparison() (Expr, error) {
 
 		expr = &BinaryExpr{
 			left:     expr,
-			operator: *operator,
+			operator: operator,
 			right:    right,
 		}
 	}
@@ -148,7 +174,7 @@ func (p *Parser) term() (Expr, error) {
 
 		expr = &BinaryExpr{
 			left:     expr,
-			operator: *operator,
+			operator: operator,
 			right:    right,
 		}
 	}
@@ -171,7 +197,7 @@ func (p *Parser) factor() (Expr, error) {
 
 		expr = &BinaryExpr{
 			left:     expr,
-			operator: *operator,
+			operator: operator,
 			right:    right,
 		}
 	}
@@ -188,7 +214,7 @@ func (p *Parser) unary() (Expr, error) {
 		}
 
 		return &UnaryExpr{
-			operator: *operator,
+			operator: operator,
 			right:    right,
 		}, nil
 	}
@@ -205,6 +231,10 @@ func (p *Parser) primary() (Expr, error) {
 	}
 	if p.match(NIL) {
 		return &LiteralExpr{value: nil}, nil
+	}
+
+	if p.match(IDENTIFIER) {
+		return &VariableExpr{name: p.previous()}, nil
 	}
 
 	if p.match(NUMBER, STRING) {

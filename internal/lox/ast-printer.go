@@ -45,3 +45,7 @@ func (a *AstPrinter) VisitGroupingExpr(g *GroupingExpr) any {
 func (a *AstPrinter) VisitUnaryExpr(u *UnaryExpr) any {
 	return fmt.Sprintf("(%s %s)", u.right.Accept(a), u.operator.lexeme)
 }
+
+func (a *AstPrinter) VisitVariableExpr(u *VariableExpr) any {
+	return u.name.lexeme
+}

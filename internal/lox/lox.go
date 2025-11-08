@@ -13,8 +13,8 @@ type Lox struct {
 	hadError    bool
 }
 
-func NewLox() Lox {
-	return Lox{
+func NewLox() *Lox {
+	return &Lox{
 		interpreter: NewInterpreter(),
 		reporters:   []error_reporters.ErrorReporter[error]{},
 		hadError:    false,

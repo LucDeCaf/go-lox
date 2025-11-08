@@ -3,16 +3,21 @@ package lox
 import "fmt"
 
 type Interpreter struct {
+	env    *Environment
 	errors []error
 }
 
-type InterpretError struct {
-	stmt    Stmt
+type RuntimeError struct {
 	message string
+}
+
+func (e *RuntimeError) Error() string {
+	return "RuntimeError: " + e.message
 }
 
 func NewInterpreter() *Interpreter {
 	return &Interpreter{
+		env:    NewEnvironment(),
 		errors: []error{},
 	}
 }
@@ -130,17 +135,38 @@ func (i *Interpreter) VisitUnaryExpr(u *UnaryExpr) any {
 	}
 
 	// Unreachable
-	// TODO proper error handling regardless
 	return nil
 }
 
-func (i *Interpreter) VisitExpressionStmt(s *ExpressionStmt) {
-	i.evaluate(s.expression)
+func (i *Interpreter) VisitVariableExpr(u *VariableExpr) any {
+	v, ok := i.env.Get(u.name.lexeme)
+	if !ok {
+		return &RuntimeError{
+			message: "Undefined variable '" + u.name.lexeme + "'",
+		}
+	}
+	return v
 }
 
-func (i *Interpreter) VisitPrintStmt(s *PrintStmt) {
+func (i *Interpreter) VisitExpressionStmt(s *ExpressionStmt) error {
+	i.evaluate(s.expression)
+	return nil
+}
+
+func (i *Interpreter) VisitPrintStmt(s *PrintStmt) error {
 	expr := i.evaluate(s.expression)
 	fmt.Printf("%v\n", expr)
+	return nil
+}
+
+func (i *Interpreter) VisitVarStmt(s *VarStmt) error {
+	var value any = nil
+	if s.value != nil {
+		value = i.evaluate(s.value)
+	}
+
+	i.env.Define(s.name.lexeme, value)
+	return nil
 }
 
 func (i *Interpreter) Interpret(statements []Stmt) {
@@ -157,10 +183,6 @@ func (i *Interpreter) execute(s Stmt) error {
 
 func (i *Interpreter) evaluate(e Expr) any {
 	return e.Accept(i)
-}
-
-func (i *Interpreter) addError(err error) {
-	i.errors = append(i.errors, err)
 }
 
 func isTruthy(obj any) bool {
