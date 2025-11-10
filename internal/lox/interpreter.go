@@ -1,6 +1,9 @@
 package lox
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/LucDeCaf/go-lox/internal/lox/ast"
+)
 
 type Interpreter struct {
 	env    *Environment
@@ -22,20 +25,20 @@ func NewInterpreter() *Interpreter {
 	}
 }
 
-func (i *Interpreter) VisitLiteralExpr(l *LiteralExpr) any {
-	return l.value
+func (i *Interpreter) VisitLiteralExpr(l *ast.LiteralExpr) any {
+	return l.Value
 }
 
-func (i *Interpreter) VisitGroupingExpr(g *GroupingExpr) any {
-	return i.evaluate(g.expression)
+func (i *Interpreter) VisitGroupingExpr(g *ast.GroupingExpr) any {
+	return i.evaluate(g.Expression)
 }
 
-func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
-	left := i.evaluate(b.left)
-	right := i.evaluate(b.right)
+func (i *Interpreter) VisitBinaryExpr(b *ast.BinaryExpr) any {
+	left := i.evaluate(b.Left)
+	right := i.evaluate(b.Right)
 
-	switch b.operator.tokenType {
-	case MINUS:
+	switch b.Operator.Type {
+	case ast.MINUS:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -43,7 +46,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left - right
 
-	case STAR:
+	case ast.STAR:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -51,7 +54,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left * right
 
-	case SLASH:
+	case ast.SLASH:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -59,7 +62,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left / right
 
-	case PLUS:
+	case ast.PLUS:
 		switch left := left.(type) {
 		case float64:
 			right, ok := right.(float64)
@@ -75,7 +78,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 			return left + right
 		}
 
-	case GREATER:
+	case ast.GREATER:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -83,7 +86,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left > right
 
-	case GREATER_EQUAL:
+	case ast.GREATER_EQUAL:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -91,7 +94,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left >= right
 
-	case LESS:
+	case ast.LESS:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -99,7 +102,7 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left < right
 
-	case LESS_EQUAL:
+	case ast.LESS_EQUAL:
 		left, right, ok := extractFloats(left, right)
 		if !ok {
 			return nil
@@ -107,10 +110,10 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 
 		return left <= right
 
-	case BANG_EQUAL:
+	case ast.BANG_EQUAL:
 		return left != right
 
-	case EQUAL_EQUAL:
+	case ast.EQUAL_EQUAL:
 		return left == right
 	}
 
@@ -118,11 +121,11 @@ func (i *Interpreter) VisitBinaryExpr(b *BinaryExpr) any {
 	return nil
 }
 
-func (i *Interpreter) VisitUnaryExpr(u *UnaryExpr) any {
-	right := i.evaluate(u.right)
+func (i *Interpreter) VisitUnaryExpr(u *ast.UnaryExpr) any {
+	right := i.evaluate(u.Right)
 
-	switch u.operator.tokenType {
-	case MINUS:
+	switch u.Operator.Type {
+	case ast.MINUS:
 		right, ok := right.(float64)
 		if !ok {
 			return nil
@@ -130,7 +133,7 @@ func (i *Interpreter) VisitUnaryExpr(u *UnaryExpr) any {
 
 		return -right
 
-	case BANG:
+	case ast.BANG:
 		return !isTruthy(right)
 	}
 
@@ -138,38 +141,38 @@ func (i *Interpreter) VisitUnaryExpr(u *UnaryExpr) any {
 	return nil
 }
 
-func (i *Interpreter) VisitVariableExpr(u *VariableExpr) any {
-	v, ok := i.env.Get(u.name.lexeme)
+func (i *Interpreter) VisitVariableExpr(u *ast.VariableExpr) any {
+	v, ok := i.env.Get(u.Name.Lexeme)
 	if !ok {
 		return &RuntimeError{
-			message: "Undefined variable '" + u.name.lexeme + "'",
+			message: "Undefined variable '" + u.Name.Lexeme + "'",
 		}
 	}
 	return v
 }
 
-func (i *Interpreter) VisitExpressionStmt(s *ExpressionStmt) error {
-	i.evaluate(s.expression)
+func (i *Interpreter) VisitExpressionStmt(s *ast.ExpressionStmt) error {
+	i.evaluate(s.Expression)
 	return nil
 }
 
-func (i *Interpreter) VisitPrintStmt(s *PrintStmt) error {
-	expr := i.evaluate(s.expression)
+func (i *Interpreter) VisitPrintStmt(s *ast.PrintStmt) error {
+	expr := i.evaluate(s.Expression)
 	fmt.Printf("%v\n", expr)
 	return nil
 }
 
-func (i *Interpreter) VisitVarStmt(s *VarStmt) error {
+func (i *Interpreter) VisitVarStmt(s *ast.VarStmt) error {
 	var value any = nil
-	if s.value != nil {
-		value = i.evaluate(s.value)
+	if s.Value != nil {
+		value = i.evaluate(s.Value)
 	}
 
-	i.env.Define(s.name.lexeme, value)
+	i.env.Define(s.Name.Lexeme, value)
 	return nil
 }
 
-func (i *Interpreter) Interpret(statements []Stmt) {
+func (i *Interpreter) Interpret(statements []ast.Stmt) {
 	for _, stmt := range statements {
 		if err := i.execute(stmt); err != nil {
 			i.errors = append(i.errors, err)
@@ -177,11 +180,11 @@ func (i *Interpreter) Interpret(statements []Stmt) {
 	}
 }
 
-func (i *Interpreter) execute(s Stmt) error {
+func (i *Interpreter) execute(s ast.Stmt) error {
 	return s.Accept(i)
 }
 
-func (i *Interpreter) evaluate(e Expr) any {
+func (i *Interpreter) evaluate(e ast.Expr) any {
 	return e.Accept(i)
 }
 

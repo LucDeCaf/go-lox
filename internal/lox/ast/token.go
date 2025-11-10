@@ -1,4 +1,4 @@
-package lox
+package ast
 
 import "fmt"
 
@@ -47,10 +47,10 @@ const (
 )
 
 type Token struct {
-	tokenType TokenType
-	lexeme    string
-	literal   any
-	line      int
+	Type    TokenType
+	Lexeme  string
+	Literal any
+	Line    int
 }
 
 func NewToken(
@@ -60,15 +60,15 @@ func NewToken(
 	line int,
 ) Token {
 	return Token{
-		tokenType,
-		lexeme,
-		literal,
-		line,
+		Type:    tokenType,
+		Lexeme:  lexeme,
+		Literal: literal,
+		Line:    line,
 	}
 }
 
 func (t *Token) String() string {
-	return fmt.Sprintf("%s %s", t.tokenType.String(), t.lexeme)
+	return fmt.Sprintf("%s %s", t.Type.String(), t.Lexeme)
 }
 
 func (tt TokenType) String() string {

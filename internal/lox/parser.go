@@ -2,16 +2,17 @@ package lox
 
 import (
 	"fmt"
+	"github.com/LucDeCaf/go-lox/internal/lox/ast"
 )
 
 type Parser struct {
-	tokens  []Token
+	tokens  []ast.Token
 	errors  []error
 	current int
 }
 
 type ParseError struct {
-	token   Token
+	token   ast.Token
 	message string
 }
 
@@ -21,16 +22,16 @@ func (e *ParseError) Error() string {
 
 func NewParser() *Parser {
 	return &Parser{
-		tokens:  []Token{},
+		tokens:  []ast.Token{},
 		errors:  []error{},
 		current: 0,
 	}
 }
-func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
+func (p *Parser) parse(tokens []ast.Token) ([]ast.Stmt, bool) {
 	p.tokens = tokens
 	p.errors = []error{}
 
-	statements := []Stmt{}
+	statements := []ast.Stmt{}
 
 	for !p.isAtEnd() {
 		stmt, err := p.declaration()
@@ -49,211 +50,211 @@ func (p *Parser) parse(tokens []Token) ([]Stmt, bool) {
 	return statements, true
 }
 
-func (p *Parser) declaration() (Stmt, error) {
-	if p.match(VAR) {
+func (p *Parser) declaration() (ast.Stmt, error) {
+	if p.match(ast.VAR) {
 		return p.varDeclaration()
 	}
 	return p.statement()
 }
 
-func (p *Parser) varDeclaration() (Stmt, error) {
-	name, err := p.consume(IDENTIFIER, "Expect identifier after VAR.")
+func (p *Parser) varDeclaration() (ast.Stmt, error) {
+	name, err := p.consume(ast.IDENTIFIER, "Expect identifier after VAR.")
 	if err != nil {
 		return nil, err
 	}
 
-	var value Expr = nil
-	if p.match(EQUAL) {
+	var value ast.Expr = nil
+	if p.match(ast.EQUAL) {
 		value, err = p.expression()
 	}
 
-	return &VarStmt{
-		name,
-		value,
+	return &ast.VarStmt{
+		Name:  name,
+		Value: value,
 	}, nil
 }
 
-func (p *Parser) statement() (Stmt, error) {
-	if p.match(PRINT) {
+func (p *Parser) statement() (ast.Stmt, error) {
+	if p.match(ast.PRINT) {
 		return p.printStmt()
 	}
 
 	return p.expressionStmt()
 }
 
-func (p *Parser) printStmt() (Stmt, error) {
-	expression, err := p.expression()
+func (p *Parser) printStmt() (ast.Stmt, error) {
+	expr, err := p.expression()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = p.consume(SEMICOLON, "Expect ';' after expression.")
+	_, err = p.consume(ast.SEMICOLON, "Expect ';' after expression.")
 	if err != nil {
 		return nil, err
 	}
 
-	return &PrintStmt{expression}, nil
+	return &ast.PrintStmt{Expression: expr}, nil
 }
 
-func (p *Parser) expressionStmt() (Stmt, error) {
-	expression, err := p.expression()
+func (p *Parser) expressionStmt() (ast.Stmt, error) {
+	expr, err := p.expression()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = p.consume(SEMICOLON, "Expect ';'; after expression.")
+	_, err = p.consume(ast.SEMICOLON, "Expect ';'; after expression.")
 	if err != nil {
 		return nil, err
 	}
 
-	return &ExpressionStmt{expression}, nil
+	return &ast.ExpressionStmt{Expression: expr}, nil
 }
 
-func (p *Parser) expression() (Expr, error) {
+func (p *Parser) expression() (ast.Expr, error) {
 	return p.equality()
 }
 
-func (p *Parser) equality() (Expr, error) {
+func (p *Parser) equality() (ast.Expr, error) {
 	expr, err := p.comparison()
 	if err != nil {
 		return nil, err
 	}
 
-	for p.match(BANG_EQUAL, EQUAL_EQUAL) {
+	for p.match(ast.BANG_EQUAL, ast.EQUAL_EQUAL) {
 		operator := p.previous()
 		right, err := p.comparison()
 		if err != nil {
 			return nil, err
 		}
 
-		expr = &BinaryExpr{
-			left:     expr,
-			operator: operator,
-			right:    right,
+		expr = &ast.BinaryExpr{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
 		}
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) comparison() (Expr, error) {
+func (p *Parser) comparison() (ast.Expr, error) {
 	expr, err := p.term()
 	if err != nil {
 		return nil, err
 	}
 
-	for p.match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL) {
+	for p.match(ast.GREATER, ast.GREATER_EQUAL, ast.LESS, ast.LESS_EQUAL) {
 		operator := p.previous()
 		right, err := p.term()
 		if err != nil {
 			return nil, err
 		}
 
-		expr = &BinaryExpr{
-			left:     expr,
-			operator: operator,
-			right:    right,
+		expr = &ast.BinaryExpr{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
 		}
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) term() (Expr, error) {
+func (p *Parser) term() (ast.Expr, error) {
 	expr, err := p.factor()
 	if err != nil {
 		return nil, err
 	}
 
-	for p.match(PLUS, MINUS) {
+	for p.match(ast.PLUS, ast.MINUS) {
 		operator := p.previous()
 		right, err := p.factor()
 		if err != nil {
 			return nil, err
 		}
 
-		expr = &BinaryExpr{
-			left:     expr,
-			operator: operator,
-			right:    right,
+		expr = &ast.BinaryExpr{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
 		}
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) factor() (Expr, error) {
+func (p *Parser) factor() (ast.Expr, error) {
 	expr, err := p.unary()
 	if err != nil {
 		return nil, err
 	}
 
-	for p.match(STAR, SLASH) {
+	for p.match(ast.STAR, ast.SLASH) {
 		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
 			return nil, err
 		}
 
-		expr = &BinaryExpr{
-			left:     expr,
-			operator: operator,
-			right:    right,
+		expr = &ast.BinaryExpr{
+			Left:     expr,
+			Operator: operator,
+			Right:    right,
 		}
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) unary() (Expr, error) {
-	if p.match(BANG, MINUS) {
+func (p *Parser) unary() (ast.Expr, error) {
+	if p.match(ast.BANG, ast.MINUS) {
 		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
 			return nil, err
 		}
 
-		return &UnaryExpr{
-			operator: operator,
-			right:    right,
+		return &ast.UnaryExpr{
+			Operator: operator,
+			Right:    right,
 		}, nil
 	}
 
 	return p.primary()
 }
 
-func (p *Parser) primary() (Expr, error) {
-	if p.match(TRUE) {
-		return &LiteralExpr{value: true}, nil
+func (p *Parser) primary() (ast.Expr, error) {
+	if p.match(ast.TRUE) {
+		return &ast.LiteralExpr{Value: true}, nil
 	}
-	if p.match(FALSE) {
-		return &LiteralExpr{value: false}, nil
+	if p.match(ast.FALSE) {
+		return &ast.LiteralExpr{Value: false}, nil
 	}
-	if p.match(NIL) {
-		return &LiteralExpr{value: nil}, nil
-	}
-
-	if p.match(IDENTIFIER) {
-		return &VariableExpr{name: p.previous()}, nil
+	if p.match(ast.NIL) {
+		return &ast.LiteralExpr{Value: nil}, nil
 	}
 
-	if p.match(NUMBER, STRING) {
-		value := p.previous().literal
-		return &LiteralExpr{value}, nil
+	if p.match(ast.IDENTIFIER) {
+		return &ast.VariableExpr{Name: p.previous()}, nil
 	}
 
-	if p.match(LEFT_PAREN) {
+	if p.match(ast.NUMBER, ast.STRING) {
+		value := p.previous().Literal
+		return &ast.LiteralExpr{Value: value}, nil
+	}
+
+	if p.match(ast.LEFT_PAREN) {
 		expr, err := p.expression()
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = p.consume(RIGHT_PAREN, "Expect ')' after expression.")
+		_, err = p.consume(ast.RIGHT_PAREN, "Expect ')' after expression.")
 		if err != nil {
 			return nil, err
 		}
 
-		return &GroupingExpr{expression: expr}, nil
+		return &ast.GroupingExpr{Expression: expr}, nil
 	}
 
 	return nil, &ParseError{token: *p.peek(), message: "Invalid token."}
@@ -263,26 +264,26 @@ func (p *Parser) synchronize() {
 	p.advance()
 
 	for !p.isAtEnd() {
-		if p.previous().tokenType == SEMICOLON {
+		if p.previous().Type == ast.SEMICOLON {
 			return
 		}
 
-		switch p.peek().tokenType {
-		case CLASS:
+		switch p.peek().Type {
+		case ast.CLASS:
 			return
-		case FUN:
+		case ast.FUN:
 			return
-		case VAR:
+		case ast.VAR:
 			return
-		case FOR:
+		case ast.FOR:
 			return
-		case IF:
+		case ast.IF:
 			return
-		case WHILE:
+		case ast.WHILE:
 			return
-		case PRINT:
+		case ast.PRINT:
 			return
-		case RETURN:
+		case ast.RETURN:
 			return
 		}
 
@@ -290,18 +291,18 @@ func (p *Parser) synchronize() {
 	}
 }
 
-func (p *Parser) advance() *Token {
+func (p *Parser) advance() *ast.Token {
 	if !p.isAtEnd() {
 		p.current++
 	}
 	return p.previous()
 }
 
-func (p *Parser) previous() *Token {
+func (p *Parser) previous() *ast.Token {
 	return &p.tokens[p.current-1]
 }
 
-func (p *Parser) match(tokenTypes ...TokenType) bool {
+func (p *Parser) match(tokenTypes ...ast.TokenType) bool {
 	for _, tokenType := range tokenTypes {
 		if p.check(tokenType) {
 			p.advance()
@@ -311,18 +312,18 @@ func (p *Parser) match(tokenTypes ...TokenType) bool {
 	return false
 }
 
-func (p *Parser) check(tokenType TokenType) bool {
+func (p *Parser) check(tokenType ast.TokenType) bool {
 	if p.isAtEnd() {
 		return false
 	}
-	return p.peek().tokenType == tokenType
+	return p.peek().Type == tokenType
 }
 
-func (p *Parser) peek() *Token {
+func (p *Parser) peek() *ast.Token {
 	return &p.tokens[p.current]
 }
 
-func (p *Parser) consume(tokenType TokenType, errorMessage string) (*Token, error) {
+func (p *Parser) consume(tokenType ast.TokenType, errorMessage string) (*ast.Token, error) {
 	if p.check(tokenType) {
 		return p.advance(), nil
 	}
@@ -332,5 +333,5 @@ func (p *Parser) consume(tokenType TokenType, errorMessage string) (*Token, erro
 }
 
 func (p *Parser) isAtEnd() bool {
-	return p.current >= len(p.tokens) || p.peek().tokenType == EOF
+	return p.current >= len(p.tokens) || p.peek().Type == ast.EOF
 }

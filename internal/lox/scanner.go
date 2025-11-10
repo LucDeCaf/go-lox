@@ -2,12 +2,13 @@ package lox
 
 import (
 	"fmt"
+	"github.com/LucDeCaf/go-lox/internal/lox/ast"
 	"strconv"
 )
 
 type Scanner struct {
 	source string
-	tokens []Token
+	tokens []ast.Token
 	errors []error
 
 	start   int
@@ -27,7 +28,7 @@ func (e *ScanError) Error() string {
 func NewScanner() *Scanner {
 	return &Scanner{
 		source:  "",
-		tokens:  []Token{},
+		tokens:  []ast.Token{},
 		errors:  []error{},
 		start:   0,
 		current: 0,
@@ -35,7 +36,7 @@ func NewScanner() *Scanner {
 	}
 }
 
-func (s *Scanner) scanTokens(source string) ([]Token, bool) {
+func (s *Scanner) scanTokens(source string) ([]ast.Token, bool) {
 	s.source = source
 	s.errors = []error{}
 
@@ -44,8 +45,8 @@ func (s *Scanner) scanTokens(source string) ([]Token, bool) {
 		s.scanToken()
 	}
 
-	s.tokens = append(s.tokens, NewToken(
-		EOF,
+	s.tokens = append(s.tokens, ast.NewToken(
+		ast.EOF,
 		"",
 		nil,
 		s.line,
@@ -58,48 +59,48 @@ func (s *Scanner) scanToken() {
 	c := s.advance()
 	switch c {
 	case '(':
-		s.addToken(LEFT_PAREN)
+		s.addToken(ast.LEFT_PAREN)
 	case ')':
-		s.addToken(RIGHT_PAREN)
+		s.addToken(ast.RIGHT_PAREN)
 	case '{':
-		s.addToken(LEFT_BRACE)
+		s.addToken(ast.LEFT_BRACE)
 	case '}':
-		s.addToken(RIGHT_BRACE)
+		s.addToken(ast.RIGHT_BRACE)
 	case ',':
-		s.addToken(COMMA)
+		s.addToken(ast.COMMA)
 	case '.':
-		s.addToken(DOT)
+		s.addToken(ast.DOT)
 	case '-':
-		s.addToken(MINUS)
+		s.addToken(ast.MINUS)
 	case '+':
-		s.addToken(PLUS)
+		s.addToken(ast.PLUS)
 	case ';':
-		s.addToken(SEMICOLON)
+		s.addToken(ast.SEMICOLON)
 	case '*':
-		s.addToken(STAR)
+		s.addToken(ast.STAR)
 	case '!':
 		if s.match('=') {
-			s.addToken(BANG_EQUAL)
+			s.addToken(ast.BANG_EQUAL)
 		} else {
-			s.addToken(BANG)
+			s.addToken(ast.BANG)
 		}
 	case '=':
 		if s.match('=') {
-			s.addToken(EQUAL_EQUAL)
+			s.addToken(ast.EQUAL_EQUAL)
 		} else {
-			s.addToken(EQUAL)
+			s.addToken(ast.EQUAL)
 		}
 	case '<':
 		if s.match('=') {
-			s.addToken(LESS_EQUAL)
+			s.addToken(ast.LESS_EQUAL)
 		} else {
-			s.addToken(LESS)
+			s.addToken(ast.LESS)
 		}
 	case '>':
 		if s.match('=') {
-			s.addToken(GREATER_EQUAL)
+			s.addToken(ast.GREATER_EQUAL)
 		} else {
-			s.addToken(GREATER)
+			s.addToken(ast.GREATER)
 		}
 	case '/':
 		if s.match('/') {
@@ -107,7 +108,7 @@ func (s *Scanner) scanToken() {
 				s.advance()
 			}
 		} else {
-			s.addToken(SLASH)
+			s.addToken(ast.SLASH)
 		}
 
 	case ' ':
@@ -139,13 +140,13 @@ func (s *Scanner) scanToken() {
 	}
 }
 
-func (s *Scanner) addToken(tokenType TokenType) {
+func (s *Scanner) addToken(tokenType ast.TokenType) {
 	s.addTokenWithLiteral(tokenType, nil)
 }
 
-func (s *Scanner) addTokenWithLiteral(tokenType TokenType, literal any) {
+func (s *Scanner) addTokenWithLiteral(tokenType ast.TokenType, literal any) {
 	lexeme := s.source[s.start:s.current]
-	s.tokens = append(s.tokens, NewToken(tokenType, lexeme, literal, s.line))
+	s.tokens = append(s.tokens, ast.NewToken(tokenType, lexeme, literal, s.line))
 }
 
 func (s *Scanner) parseString() error {
@@ -166,7 +167,7 @@ func (s *Scanner) parseString() error {
 	s.advance()
 
 	literal := s.source[s.start+1 : s.current-1]
-	s.addTokenWithLiteral(STRING, literal)
+	s.addTokenWithLiteral(ast.STRING, literal)
 
 	return nil
 }
@@ -185,7 +186,7 @@ func (s *Scanner) parseNumber() {
 
 	lexeme := s.source[s.start:s.current]
 	number, _ := strconv.ParseFloat(lexeme, 64)
-	s.addTokenWithLiteral(NUMBER, number)
+	s.addTokenWithLiteral(ast.NUMBER, number)
 }
 
 func (s *Scanner) parseIdent() {
@@ -194,9 +195,9 @@ func (s *Scanner) parseIdent() {
 	}
 
 	ident := s.source[s.start:s.current]
-	keyword, ok := keywords[ident]
+	keyword, ok := ast.Keywords[ident]
 	if !ok {
-		s.addTokenWithLiteral(IDENTIFIER, ident)
+		s.addTokenWithLiteral(ast.IDENTIFIER, ident)
 	} else {
 		s.addToken(keyword)
 	}

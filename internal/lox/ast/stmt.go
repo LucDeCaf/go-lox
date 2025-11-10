@@ -1,4 +1,4 @@
-package lox
+package ast
 
 type Stmt interface {
 	Accept(StmtVisitor) error
@@ -11,16 +11,16 @@ type StmtVisitor interface {
 }
 
 type ExpressionStmt struct {
-	expression Expr
+	Expression Expr
 }
 
 type PrintStmt struct {
-	expression Expr
+	Expression Expr
 }
 
 type VarStmt struct {
-	name  *Token
-	value Expr
+	Name  *Token
+	Value Expr
 }
 
 func (s *ExpressionStmt) Accept(v StmtVisitor) error {

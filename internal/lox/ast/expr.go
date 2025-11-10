@@ -1,4 +1,4 @@
-package lox
+package ast
 
 type Expr interface {
 	Accept(ExprVisitor) any
@@ -13,25 +13,25 @@ type ExprVisitor interface {
 }
 
 type LiteralExpr struct {
-	value any
+	Value any
 }
 
 type BinaryExpr struct {
-	left, right Expr
-	operator    *Token
+	Left, Right Expr
+	Operator    *Token
 }
 
 type GroupingExpr struct {
-	expression Expr
+	Expression Expr
 }
 
 type UnaryExpr struct {
-	right    Expr
-	operator *Token
+	Right    Expr
+	Operator *Token
 }
 
 type VariableExpr struct {
-	name *Token
+	Name *Token
 }
 
 func (expr *LiteralExpr) Accept(v ExprVisitor) any {
